@@ -16,7 +16,7 @@ library(ggplot2)
 library(lubridate)
 
 # First read in all data and name each table
-NO2.result <- read_excel(path = file.path("original", "20160713001 - NO2.XLS"), sheet = "BNO2_Result")
+NO2.result <- read_excel(path = file.path("originals", "20160713001 - NO2.XLS"), sheet = "BNO2_Result")
 NO2.controls <- read_excel(path = file.path("original", "20160713001 - NO2.XLS"), sheet = "BNO2_Controls")
 NO2.calibrants <- read_excel(path = file.path("original", "20160713001 - NO2.XLS"), sheet = "BNO2_Calibrants") 
 NO2.rbl <- read_excel(path = file.path("original", "20160713001 - NO2.XLS"), sheet = "BNO2_RBL")

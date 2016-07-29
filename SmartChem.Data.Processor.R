@@ -32,7 +32,7 @@ sc.xlwb.processor <- function(filename) {
   calibrants <- read_excel(path = file.path("originals", filename), sheet = paste0(sc.method, "_Calibrants")) 
   rbl <- read_excel(path = file.path("originals", filename), sheet = paste0(sc.method, "_RBL"))
   
-  # Create output path and folder
+  # Create output and merge paths and folders
   output.path <- as.character(file.path("output", paste(sub(".xls","",filename, ignore.case = T), format(Sys.time(), format = "%Y%m%d%H%M"), sep = "-")))
   dir.create(path = output.path)
   
@@ -71,6 +71,9 @@ sc.xlwb.processor <- function(filename) {
     ggsave(filename = file.path(output.path, paste0(sc.method, "_", rundate,".dups.diff.pdf")))
     write.csv(result.samples, file = file.path(output.path, paste0(sc.method, "_", rundate,".result.samples.csv")))
     write.csv(result.dups, file = file.path(output.path, paste0(sc.method, "_", rundate,".result.dups.csv")))
+    # Create table to merge with other runs
+    result.samples.merge <- result.samples %>% select(SampleID, Concentration, test)
+    saveRDS(result.samples.merge, file = file.path("merge", paste0(sc.method, "_", rundate,".result.merge.RDS")))
            
   # Quality controls
     # Add RunDate to RunTime and define RunTime variable as POSIX type
@@ -105,3 +108,25 @@ for (filename in wbpaths.orig) {
   print(filename)
   sc.xlwb.processor(filename)
 }
+
+# Merge all the processed files into one data frame for import to the db, and save this in a directory named "Merged"
+# Create function "merge.data"
+merge.sc.data <- function(path) {
+  # Create list of files to merge
+  files <- dir(path, pattern = "*\\.rds", ignore.case = T, 
+               full.names = T)
+  # Load all files into R as an object named "tables"
+  tables <- lapply(files, readRDS)
+  # Merge the files just loaded and sort by date, filecode, depth.
+  sc.merged <- bind_rows(tables) %>% spread(test, Concentration) %>% mutate(NO3 = BNO3 - BNO2)
+  
+  # Print to screen the first few rows of merged data, the structure of the merged table, and a summary of the number of rows from each input table
+  print(head(sc.merged))
+  print(str(sc.merged))
+  
+  # Save the merged data as a .csv file in subdirectory "Merged" with timestamp added to filename.
+  write.csv(sc.merged, file = file.path("output", paste0("sc.merged.", format(Sys.time(), format = "%Y%m%d%H%M"), ".csv")))
+}
+
+# Run merge.data on the "Processed" folder
+merge.sc.data("merge")
